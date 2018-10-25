@@ -15,9 +15,10 @@ import com.parse.ParseException;
 import com.parse.ParseUser;
 import com.parse.SignUpCallback;
 
-public class SignupActivity extends AppCompatActivity {
+public class SignUpActivity extends AppCompatActivity {
     private EditText usernameView;
     private EditText passwordView;
+    private EditText emailView;
     private EditText passwordAgainView;
 
     @Override
@@ -29,11 +30,11 @@ public class SignupActivity extends AppCompatActivity {
         back_button.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                final ProgressDialog dlg = new ProgressDialog(SignupActivity.this);
+                final ProgressDialog dlg = new ProgressDialog(SignUpActivity.this);
                 dlg.setTitle("Please, wait a moment.");
                 dlg.setMessage("Returning to the login section...");
                 dlg.show();
-                Intent intent = new Intent(SignupActivity.this, LoginActivity.class);
+                Intent intent = new Intent(SignUpActivity.this, LoginActivity.class);
                 dlg.dismiss();
                 intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK | Intent.FLAG_ACTIVITY_NEW_TASK);
                 startActivity(intent);
@@ -42,6 +43,7 @@ public class SignupActivity extends AppCompatActivity {
 
         usernameView = (EditText) findViewById(R.id.username);
         passwordView = (EditText) findViewById(R.id.password);
+        emailView = (EditText) findViewById(R.id.email);
         passwordAgainView = (EditText) findViewById(R.id.passwordAgain);
 
 
@@ -57,12 +59,19 @@ public class SignupActivity extends AppCompatActivity {
                     validationError = true;
                     validationErrorMessage.append("an username");
                 }
-                if (isEmpty(passwordView)) {
+                if (isEmpty(emailView)||!isEmailValid(emailView.getText().toString())) {
                     if (validationError) {
                         validationErrorMessage.append(" and ");
                     }
                     validationError = true;
-                    validationErrorMessage.append("a password");
+                    validationErrorMessage.append("a valid email address");
+                }
+                if (isEmpty(passwordView)||!isPasswordValid(passwordView.getText().toString())) {
+                    if (validationError) {
+                        validationErrorMessage.append(" and ");
+                    }
+                    validationError = true;
+                    validationErrorMessage.append("a valid password");
                 }
                 if (isEmpty(passwordAgainView)) {
                     if (validationError) {
@@ -83,71 +92,82 @@ public class SignupActivity extends AppCompatActivity {
                 validationErrorMessage.append(".");
 
                 if (validationError) {
-                    Toast.makeText(SignupActivity.this, validationErrorMessage.toString(), Toast.LENGTH_LONG).show();
+                    Toast.makeText(SignUpActivity.this, validationErrorMessage.toString(), Toast.LENGTH_LONG).show();
                     return;
                 }
 
                 //Setting up a progress dialog
-                final ProgressDialog dlg = new ProgressDialog(SignupActivity.this);
+                final ProgressDialog dlg = new ProgressDialog(SignUpActivity.this);
                 dlg.setTitle("Please, wait a moment.");
                 dlg.setMessage("Signing up...");
                 dlg.show();
 
-                ParseUser user = new ParseUser();
-                user.setUsername(usernameView.getText().toString());
-                user.setPassword(passwordView.getText().toString());
-                user.signUpInBackground(new SignUpCallback() {
-                    @Override
-                    public void done(ParseException e) {
-                        if (e == null) {
-                            dlg.dismiss();
-                            alertDisplayer("Sucessful Login","Welcome " + usernameView.getText().toString() + "!");
+                try {
+                    // Reset errors.
+                    emailView.setError(null);
+                    passwordView.setError(null);
 
-                        } else {
-                            dlg.dismiss();
-                            ParseUser.logOut();
-                            Toast.makeText(SignupActivity.this, e.getMessage(), Toast.LENGTH_LONG).show();
+                    ParseUser user = new ParseUser();
+                    user.setUsername(usernameView.getText().toString());
+                    user.setPassword(passwordView.getText().toString());
+                    user.setEmail(emailView.getText().toString());
+
+                    user.signUpInBackground(new SignUpCallback() {
+                        @Override
+                        public void done(ParseException e) {
+                            if (e == null) {
+                                dlg.dismiss();
+                                ParseUser.logOut();
+                                alertDisplayer("Account Created Successfully!", "Please verify your email before Login", false);
+                            } else {
+                                dlg.dismiss();
+                                ParseUser.logOut();
+                                alertDisplayer("Error Account Creation failed", "Account could not be created" + " :" + e.getMessage(), true);
+                            }
                         }
-                    }
-                });
-
+                    });
+                } catch (Exception e) {
+                    dlg.dismiss();
+                    e.printStackTrace();
+                }
             }
         });
     }
 
-    private void alertDisplayer(String title, String message) {
-        AlertDialog.Builder builder = new AlertDialog.Builder(SignupActivity.this)
+
+
+
+    private boolean isEmpty(EditText text) {
+        return text.getText().toString().trim().length() <= 0;
+    }
+
+    private boolean isMatching(EditText text1, EditText text2){
+        return text1.getText().toString().equals(text2.getText().toString());
+    }
+    private boolean isEmailValid(String email) {
+        return email.contains("@");
+    }
+
+    private boolean isPasswordValid(String password) {
+        return password.length() > 4;
+    }
+    private void alertDisplayer(String title,String message, final boolean error){
+        android.app.AlertDialog.Builder builder = new android.app.AlertDialog.Builder(SignUpActivity.this)
                 .setTitle(title)
                 .setMessage(message)
                 .setPositiveButton("OK", new DialogInterface.OnClickListener() {
                     @Override
                     public void onClick(DialogInterface dialog, int which) {
                         dialog.cancel();
-                        Intent intent = new Intent(SignupActivity.this, MainActivity.class);
-                        intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK | Intent.FLAG_ACTIVITY_NEW_TASK);
-                        startActivity(intent);
+                        if(!error) {
+                            Intent intent = new Intent(SignUpActivity.this, LoginActivity.class);
+                            intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK | Intent.FLAG_ACTIVITY_NEW_TASK);
+                            startActivity(intent);
+                        }
                     }
                 });
-        AlertDialog ok = builder.create();
+        android.app.AlertDialog ok = builder.create();
         ok.show();
-    }
-
-
-    private boolean isEmpty(EditText text) {
-        if (text.getText().toString().trim().length() > 0) {
-            return false;
-        } else {
-            return true;
-        }
-    }
-
-    private boolean isMatching(EditText text1, EditText text2){
-        if(text1.getText().toString().equals(text2.getText().toString())){
-            return true;
-        }
-        else{
-            return false;
-        }
     }
     
     

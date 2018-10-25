@@ -27,10 +27,9 @@ public class MainActivity extends AppCompatActivity {
                 dlg.setMessage("Signing Out...");
                 dlg.show();
 
-                // logging out of Parse
                 ParseUser.logOut();
 
-                alertDisplayer("So, you're going...", "Ok...Bye-bye then");
+                alertDisplayer("So, you're going...", "See-You-Soooon....");
 
             }
         });
